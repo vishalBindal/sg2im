@@ -31,6 +31,7 @@ from torch.utils.data import DataLoader
 
 from sg2im.data import imagenet_deprocess_batch
 from sg2im.data.coco import CocoSceneGraphDataset, coco_collate_fn
+from sg2im.data.robot import RobotDataset, robot_collate_fn
 from sg2im.data.vg import VgSceneGraphDataset, vg_collate_fn
 from sg2im.discriminators import PatchDiscriminator, AcCropDiscriminator
 from sg2im.losses import get_gan_losses
@@ -43,9 +44,10 @@ torch.backends.cudnn.benchmark = True
 
 VG_DIR = os.path.expanduser('datasets/vg')
 COCO_DIR = os.path.expanduser('datasets/coco')
+ROBOT_DIR = os.path.expanduser('datasets/robot')
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--dataset', default='coco', choices=['vg', 'coco'])
+parser.add_argument('--dataset', default='robot', choices=['vg', 'coco', 'robot'])
 
 # Optimization hyperparameters
 parser.add_argument('--batch_size', default=32, type=int)
@@ -90,6 +92,12 @@ parser.add_argument('--coco_include_other', default=False, type=bool_flag)
 parser.add_argument('--min_object_size', default=0.02, type=float)
 parser.add_argument('--min_objects_per_image', default=3, type=int)
 parser.add_argument('--coco_stuff_only', default=True, type=bool_flag)
+
+# Robot-specific options
+parser.add_argument('--robot_train_image_dir', default=os.path.join(ROBOT_DIR, 'val_images'))
+parser.add_argument('--robot_val_image_dir', default=os.path.join(ROBOT_DIR, 'val_images'))
+parser.add_argument('--robot_train_instances_json', default=os.path.join(ROBOT_DIR, 'instances_val.json'))
+parser.add_argument('--robot_val_instances_json', default=os.path.join(ROBOT_DIR, 'instances_val.json'))
 
 # Generator options
 parser.add_argument('--mask_size', default=16, type=int) # Set this to 0 to use no masks
@@ -260,6 +268,19 @@ def build_coco_dsets(args):
 
   return vocab, train_dset, val_dset
 
+def build_robot_dsets(args):
+  train_dset = RobotDataset(args.robot_train_image_dir, args.robot_train_instances_json)
+  num_objs = train_dset.total_objects()
+  num_imgs = len(train_dset)
+  print('Training dataset has %d images and %d objects' % (num_imgs, num_objs))
+  print('(%.2f objects per image)' % (float(num_objs) / num_imgs))
+
+  val_dset = RobotDataset(args.robot_val_image_dir, args.robot_val_instances_json)
+
+  assert train_dset.vocab == val_dset.vocab
+  vocab = json.loads(json.dumps(train_dset.vocab))
+
+  return vocab, train_dset, val_dset
 
 def build_vg_dsets(args):
   with open(args.vocab_json, 'r') as f:
@@ -292,6 +313,9 @@ def build_loaders(args):
   elif args.dataset == 'coco':
     vocab, train_dset, val_dset = build_coco_dsets(args)
     collate_fn = coco_collate_fn
+  elif args.dataset == 'robot':
+    vocab, train_dset, val_dset = build_robot_dsets(args)
+    collate_fn = robot_collate_fn
 
   loader_kwargs = {
     'batch_size': args.batch_size,
