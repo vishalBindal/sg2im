@@ -14,7 +14,7 @@ from .utils import imagenet_preprocess, Resize
 
 class RobotDataset(Dataset):
   def __init__(self, image_dir, instances_json, image_size=(768, 1024), mask_size=32,
-               normalize_images=False, include_relationships=True):
+               normalize_images=False, include_relationships=False):
     """
     A PyTorch Dataset for loading Robot data and converting
     them to scene graphs on the fly.
@@ -22,8 +22,8 @@ class RobotDataset(Dataset):
     Inputs:
     - image_dir: Path to a directory where images are held
     - instances_json: Path to a JSON file giving COCO annotations
-    - image_size: Size (H, W) at which to load images. Default (64, 64).
-    - mask_size: Size M for object segmentation masks; default 16.
+    - image_size: Size (H, W) at which to load images.
+    - mask_size: Size M for object segmentation masks
     - normalize_image: If True then normalize images by subtracting ImageNet
       mean pixel and dividing by ImageNet std pixel.
     - include_relationships: If True then include spatial relationships; if

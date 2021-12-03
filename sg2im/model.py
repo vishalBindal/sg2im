@@ -177,21 +177,18 @@ class Sg2ImModel(nn.Module):
 
     {
       "objects": ["cat", "dog", "sky"],
-      "relationships": [
-        [0, "next to", 1],
-        [0, "beneath", 2],
-        [2, "above", 1],
+      "bboxes": [
+        [50,100,30,30], # [x,y,h,w]
+        [300,350,25,50],
+        [300,350,25,50],
       ]
     }
-
-    This scene graph has three relationshps: cat next to dog, cat beneath sky,
-    and sky above dog.
 
     Inputs:
     - scene_graphs: A dictionary giving a single scene graph, or a list of
       dictionaries giving a sequence of scene graphs.
 
-    Returns a tuple of LongTensors (objs, triples, obj_to_img) that have the
+    Returns a tuple of LongTensors (objs, triples, obj_to_img, boxes_gt) that have the
     same semantics as self.forward. The returned LongTensors will be on the
     same device as the model parameters.
     """
@@ -200,6 +197,7 @@ class Sg2ImModel(nn.Module):
       scene_graphs = [scene_graphs]
 
     objs, triples, obj_to_img = [], [], []
+    boxes_gt = []
     obj_offset = 0
     for i, sg in enumerate(scene_graphs):
       # Insert dummy __image__ object and __in_image__ relationships
@@ -214,20 +212,23 @@ class Sg2ImModel(nn.Module):
           raise ValueError('Object "%s" not in vocab' % obj)
         objs.append(obj_idx)
         obj_to_img.append(i)
-      for s, p, o in sg['relationships']:
-        pred_idx = self.vocab['pred_name_to_idx'].get(p, None)
-        if pred_idx is None:
-          raise ValueError('Relationship "%s" not in vocab' % p)
-        triples.append([s + obj_offset, pred_idx, o + obj_offset])
+      for (x,y,w,h) in sg['bboxes']:
+        H,W = self.image_size
+        x0 = x / W
+        y0 = y / H
+        x1 = (x + w) / W
+        y1 = (y + h) / H
+        boxes_gt.append([x0, y0, x1, y1])
       obj_offset += len(sg['objects'])
     device = next(self.parameters()).device
     objs = torch.tensor(objs, dtype=torch.int64, device=device)
     triples = torch.tensor(triples, dtype=torch.int64, device=device)
     obj_to_img = torch.tensor(obj_to_img, dtype=torch.int64, device=device)
-    return objs, triples, obj_to_img
+    boxes_gt = torch.FloatTensor(boxes_gt, device=device)
+    return objs, triples, obj_to_img, boxes_gt
 
   def forward_json(self, scene_graphs):
     """ Convenience method that combines encode_scene_graphs and forward. """
-    objs, triples, obj_to_img = self.encode_scene_graphs(scene_graphs)
-    return self.forward(objs, triples, obj_to_img)
+    objs, triples, obj_to_img, boxes_gt = self.encode_scene_graphs(scene_graphs)
+    return self.forward(objs, triples, obj_to_img, boxes_gt)
 

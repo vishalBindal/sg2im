@@ -58,7 +58,7 @@ parser.add_argument('--learning_rate', default=1e-4, type=float)
 parser.add_argument('--eval_mode_after', default=100000, type=int)
 
 # Dataset options common to both VG and COCO
-parser.add_argument('--image_size', default='64,64', type=int_tuple)
+parser.add_argument('--image_size', default='768,1024', type=int_tuple)
 parser.add_argument('--num_train_samples', default=None, type=int)
 parser.add_argument('--num_val_samples', default=1024, type=int)
 parser.add_argument('--shuffle_val', default=True, type=bool_flag)
@@ -269,7 +269,7 @@ def build_coco_dsets(args):
   return vocab, train_dset, val_dset
 
 def build_robot_dsets(args):
-  train_dset = RobotDataset(args.robot_train_image_dir, args.robot_train_instances_json)
+  train_dset = RobotDataset(args.robot_train_image_dir, args.robot_train_instances_json, mask_size=args.mask_size)
   num_objs = train_dset.total_objects()
   num_imgs = len(train_dset)
   print('Training dataset has %d images and %d objects' % (num_imgs, num_objs))
