@@ -219,6 +219,11 @@ class Sg2ImModel(nn.Module):
         x1 = (x + w) / W
         y1 = (y + h) / H
         boxes_gt.append([x0, y0, x1, y1])
+      for s, p, o in sg['relationships']:
+        pred_idx = self.vocab['pred_name_to_idx'].get(p, None)
+        if pred_idx is None:
+          raise ValueError('Relationship "%s" not in vocab' % p)
+        triples.append([s + obj_offset, pred_idx, o + obj_offset])
       obj_offset += len(sg['objects'])
     device = next(self.parameters()).device
     objs = torch.tensor(objs, dtype=torch.int64, device=device)
