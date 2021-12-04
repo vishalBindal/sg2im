@@ -219,6 +219,10 @@ class Sg2ImModel(nn.Module):
         x1 = (x + w) / W
         y1 = (y + h) / H
         boxes_gt.append([x0, y0, x1, y1])
+      
+      # Add bbox for __image__
+      boxes_gt.append([0,0,1,1])
+
       for s, p, o in sg['relationships']:
         pred_idx = self.vocab['pred_name_to_idx'].get(p, None)
         if pred_idx is None:
