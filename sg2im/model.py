@@ -229,7 +229,7 @@ class Sg2ImModel(nn.Module):
     objs = torch.tensor(objs, dtype=torch.int64, device=device)
     triples = torch.tensor(triples, dtype=torch.int64, device=device)
     obj_to_img = torch.tensor(obj_to_img, dtype=torch.int64, device=device)
-    boxes_gt = torch.tensor(boxes_gt, dtype=torch.float64, device=device)
+    boxes_gt = torch.tensor(boxes_gt, dtype=torch.float, device=device)
     return objs, triples, obj_to_img, boxes_gt
 
   def forward_json(self, scene_graphs):
