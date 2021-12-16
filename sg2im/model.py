@@ -33,7 +33,7 @@ class Sg2ImModel(nn.Module):
                refinement_dims=(1024, 512, 256, 128, 64),
                normalization='batch', activation='leakyrelu-0.2',
                mask_size=None, mlp_normalization='none', layout_noise_dim=0,
-               **kwargs):
+               num_colors=7, num_types=2, **kwargs):
     super(Sg2ImModel, self).__init__()
 
     # We used to have some additional arguments: 
@@ -47,7 +47,10 @@ class Sg2ImModel(nn.Module):
 
     num_objs = len(vocab['object_idx_to_name'])
     num_preds = len(vocab['pred_idx_to_name'])
-    self.obj_embeddings = nn.Embedding(num_objs + 1, embedding_dim)
+    self.num_colors = num_colors
+    self.num_types = num_types
+    self.color_embeddings = nn.Embedding(num_colors + 1, embedding_dim//2)
+    self.type_embeddings = nn.Embedding(num_types + 1, embedding_dim//2)
     self.pred_embeddings = nn.Embedding(num_preds, embedding_dim)
 
     if gconv_num_layers == 0:
@@ -128,7 +131,16 @@ class Sg2ImModel(nn.Module):
     if obj_to_img is None:
       obj_to_img = torch.zeros(O, dtype=objs.dtype, device=objs.device)
 
-    obj_vecs = self.obj_embeddings(objs)
+    colors = torch.tensor(objs%self.num_colors, dtype=torch.int64)
+    types = torch.tensor(objs//self.num_colors, dtype=torch.int64)
+    for i in range(len(objs)):
+      if objs[i]==self.num_colors*self.num_types: # separate color, type for background
+        colors[i] = self.num_colors
+        types[i] = self.num_types
+    color_vecs = self.color_embeddings(colors)
+    type_vecs = self.type_embeddings(types)
+
+    obj_vecs = torch.cat((color_vecs, type_vecs), dim=1)
     obj_vecs_orig = obj_vecs
     pred_vecs = self.pred_embeddings(p)
 
