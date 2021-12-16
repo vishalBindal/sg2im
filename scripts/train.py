@@ -269,13 +269,15 @@ def build_coco_dsets(args):
   return vocab, train_dset, val_dset
 
 def build_robot_dsets(args):
-  train_dset = RobotDataset(args.robot_train_image_dir, args.robot_train_instances_json, mask_size=args.mask_size)
+  train_dset = RobotDataset(args.robot_train_image_dir, args.robot_train_instances_json, 
+    image_size =args.image_size, mask_size=args.mask_size)
   num_objs = train_dset.total_objects()
   num_imgs = len(train_dset)
   print('Training dataset has %d images and %d objects' % (num_imgs, num_objs))
   print('(%.2f objects per image)' % (float(num_objs) / num_imgs))
 
-  val_dset = RobotDataset(args.robot_val_image_dir, args.robot_val_instances_json)
+  val_dset = RobotDataset(args.robot_val_image_dir, args.robot_val_instances_json,
+    image_size=args.image_size, mask_size=args.mask_size)
 
   assert train_dset.vocab == val_dset.vocab
   vocab = json.loads(json.dumps(train_dset.vocab))
