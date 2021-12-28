@@ -131,8 +131,8 @@ class Sg2ImModel(nn.Module):
     if obj_to_img is None:
       obj_to_img = torch.zeros(O, dtype=objs.dtype, device=objs.device)
 
-    colors = torch.tensor(objs%self.num_colors, dtype=torch.int64)
-    types = torch.tensor(objs//self.num_colors, dtype=torch.int64)
+    colors = (objs%self.num_colors).clone().detach()
+    types = (objs//self.num_colors).clone().detach()
     for i in range(len(objs)):
       if objs[i]==self.num_colors*self.num_types: # separate color, type for background
         colors[i] = self.num_colors
